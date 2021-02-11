@@ -5,18 +5,28 @@ Playground for Raspberry Pi Pico
 ```
 git clone https://github.com/iwatake2222/pico-work.git
 cd pico-work
-# git submodule update --init
-git submodule update --init --recursive
+git submodule update --init
+cd pico-sdk && git submodule update --init && cd ..
 mkdir build && cd build
 
-# For Windows
+# For Windows Visual Studio 2019 (Developer Command Prompt for VS 2019)
 cmake .. -G "NMake Makefiles"
-cd pj_base
 nmake
+
+# For Windows MSYS2 (Run the following commands on MSYS2)
+cmake .. -G "MSYS Makefiles" 
+make
 ```
 
 *Note* : It's important to clone TinyUSB submodule. Otherwise, you cannot use USB including UART on USB CDC. (Build succeeds even without TinyUSB although you will get warning on cmake `TinyUSB submodule has not been initialized; USB support will be unavailable` )
 
 ## Acknowledgements
 - pico-sdk
+	- https://github.com/raspberrypi/pico-sdk
 	- Copyright 2020 (c) 2020 Raspberry Pi (Trading) Ltd.
+- picoprobe
+	- https://github.com/raspberrypi/picoprobe
+	- Copyright (c) 2021 Raspberry Pi (Trading) Ltd.
+- pico-examples
+	- Copyright 2020 (c) 2020 Raspberry Pi (Trading) Ltd.
+	- https://github.com/raspberrypi/pico-examples
