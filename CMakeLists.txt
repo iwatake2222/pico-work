@@ -15,3 +15,5 @@ add_subdirectory(pico-tflmicro)
 # add_subdirectory(pj_base)
 # add_subdirectory(pj_paint)
 add_subdirectory(pj_tflmicro_sin)
+add_subdirectory(pj_tflmicro_mnist)
+
