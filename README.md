@@ -30,3 +30,6 @@ make
 - pico-examples
 	- Copyright 2020 (c) 2020 Raspberry Pi (Trading) Ltd.
 	- https://github.com/raspberrypi/pico-examples
+- pico-tflmicro
+	- Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+	- https://github.com/raspberrypi/pico-tflmicro
