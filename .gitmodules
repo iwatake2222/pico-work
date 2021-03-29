@@ -4,3 +4,6 @@
 [submodule "pico-tflmicro"]
 	path = pico-tflmicro
 	url = https://github.com/iwatake2222/pico-tflmicro
+[submodule "generic-tflmicro"]
+	path = generic-tflmicro
+	url = https://github.com/iwatake2222/generic-tflmicro.git
