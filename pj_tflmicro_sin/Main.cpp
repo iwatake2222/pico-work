@@ -8,7 +8,9 @@
 // #include <cstdlib>
 // #include <cstring>
 
+#ifndef BUILD_ON_PC
 #include "pico/stdlib.h"
+#endif
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -20,7 +22,9 @@ constexpr int kTensorArenaSize = 2000;
 static uint8_t tensor_arena[kTensorArenaSize];
 
 int main() {
+#ifndef BUILD_ON_PC
 	stdio_init_all();
+#endif
 	printf("Hello, world!\n");
 
 	static tflite::MicroErrorReporter micro_error_reporter;
