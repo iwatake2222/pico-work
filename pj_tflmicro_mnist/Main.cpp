@@ -3,7 +3,9 @@
 // #include <cstdlib>
 // #include <cstring>
 
+#ifndef BUILD_ON_PC
 #include "pico/stdlib.h"
+#endif
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -11,7 +13,11 @@
 #include "tensorflow/lite/version.h"
 #include "conv_mnist_quant.h"
 
+#ifndef BUILD_ON_PC
 #define HALT() do{while(1) sleep_ms(100);}while(0)
+#else
+#define HALT() do{}while(0)
+#endif
 
 static constexpr uint8_t NUMBER_1[28 * 28] = {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -73,8 +79,10 @@ static tflite::MicroInterpreter* createStaticInterpreter(void)
 
 int main()
 {
+#ifndef BUILD_ON_PC
 	stdio_init_all();
 	sleep_ms(1000);		// wait until UART connected
+#endif
 	printf("Hello, world!\n");
 
 	/* Create interpreter */
