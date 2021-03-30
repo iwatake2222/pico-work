@@ -70,7 +70,7 @@ int main() {
 	adcConfig.captureChannel = 0;
 	// adcConfig.captureDepth = LcdIli9341SPI::WIDTH;
 	adcConfig.captureDepth = BUFFER_SIZE;
-	adcConfig.samplingRate = 20000;
+	adcConfig.samplingRate = 10000;
 	adcBuffer.initialize(adcConfig);
 	
 	reset(lcd);
@@ -82,18 +82,20 @@ int main() {
 			/* Display wave */
 			auto& adcBufferPrevious = adcBuffer.getBuffer(0);
 			auto& adcBufferLatest = adcBuffer.getBuffer(1);
+			const float scale = 1 / 256.0 * SCALE * LcdIli9341SPI::HEIGHT;
+			const float offset = - 0.5 * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2;
 			for (int32_t i = 1; i < adcBufferPrevious.size(); i++) {
 				// lcd.drawRect(i, (adcBufferPrevious[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_BG);
 				lcd.drawLine(
-					i - 1, (adcBufferPrevious[i - 1] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2,
-					i, (adcBufferPrevious[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2,
+					i - 1, adcBufferPrevious[i - 1] * scale + offset,
+					i, adcBufferPrevious[i] * scale + offset,
 					1, COLOR_BG);
 			}
 			for (int32_t i = 1; i < adcBufferLatest.size(); i++) {
 				// lcd.drawRect(i, (adcBufferLatest[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_LINE);
 				lcd.drawLine(
-					i - 1, (adcBufferLatest[i - 1] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2,
-					i, (adcBufferLatest[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2,
+					i - 1, adcBufferLatest[i - 1] * scale + offset,
+					i, adcBufferLatest[i] * scale + offset,
 					1, COLOR_LINE);
 			}
 			if (adcBuffer.getBufferSize() > AdcBuffer::BUFFER_NUM  * 0.6) {	// do not pop data immedeately, because fft may be using it
@@ -108,7 +110,6 @@ int main() {
 			auto& fftPrevious = g_fftResultList[0];
 			auto& fftLatest = g_fftResultList[1];
 			for (int32_t i = 1; i < fftPrevious.size() / 2; i++) {
-				// lcd.putPixel(LcdIli9341SPI::WIDTH - i, fftPrevious[i] * LcdIli9341SPI::HEIGHT, COLOR_BG);
 				// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftPrevious[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_BG);
 				lcd.drawLine(
 					LcdIli9341SPI::WIDTH - (i - 1), fftPrevious[i - 1] * LcdIli9341SPI::HEIGHT,
@@ -116,7 +117,6 @@ int main() {
 					1, COLOR_BG);
 			}
 			for (int32_t i = 1; i < fftLatest.size() / 2; i++) {
-				// lcd.putPixel(LcdIli9341SPI::WIDTH - i, fftLatest[i] * LcdIli9341SPI::HEIGHT, COLOR_LINE);
 				// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftLatest[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_LINE);
 				lcd.drawLine(
 					LcdIli9341SPI::WIDTH - (i - 1), fftLatest[i - 1] * LcdIli9341SPI::HEIGHT,

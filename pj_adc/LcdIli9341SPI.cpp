@@ -129,7 +129,7 @@ void LcdIli9341SPI::drawBuffer(int32_t x, int32_t y, int32_t w, int32_t h, std::
 
 void LcdIli9341SPI::drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t size, std::array<uint8_t, 2> color)
 {
-	if (x0 != x1) {
+	if (std::abs(x0 - x1) > 1) {
 		float a = (y1 - y0) / static_cast<float>(x1 - x0);
 		int32_t b = (x1 * y0 - x0 * y1) / (x1 - x0);
 		for (int32_t x = std::min(x0, x1); x <= std::max(x0, x1); x++) {
