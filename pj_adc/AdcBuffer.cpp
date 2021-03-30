@@ -47,6 +47,11 @@ void AdcBuffer::irqHandler()
 	);
 }
 
+bool AdcBuffer::isOverflow()
+{
+	return (m_adcBufferList.size() > BUFFER_NUM);
+}
+
 int32_t AdcBuffer::initialize(const CONFIG& config)
 {
 	irqHandlerStatic = [this] { irqHandler(); };

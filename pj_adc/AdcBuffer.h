@@ -44,6 +44,7 @@ public:
 	int32_t getBufferSize();
 	std::vector<uint8_t>& getBuffer(int32_t index);
 	void deleteFront();
+	bool isOverflow();
 
 public:
 	static std::function<void(void)> irqHandlerStatic;

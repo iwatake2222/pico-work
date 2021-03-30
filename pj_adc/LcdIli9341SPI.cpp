@@ -137,6 +137,11 @@ void LcdIli9341SPI::drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int
 			// putPixel(x, y, color);
 			drawRect(x, y, size, size, color);
 		}
+		for (int32_t y = std::min(y0, y1); y <= std::max(y0, y1); y++) {
+			int32_t x = static_cast<int32_t>((y - b) / a);
+			// putPixel(x, y, color);
+			drawRect(x, y, size, size, color);
+		}
 	} else {
 		for (int32_t y = std::min(y0, y1); y <= std::max(y0, y1); y++) {
 			// putPixel(x0, y, color);
