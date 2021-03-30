@@ -20,7 +20,8 @@
 
 class AdcBuffer {
 public:
-	static constexpr int32_t ADC_CLOCK       = (48 * 1000 * 1000);        // Fixed value (48MHz)
+	static constexpr int32_t ADC_CLOCK  = (48 * 1000 * 1000);        // Fixed value (48MHz)
+	static constexpr int32_t BUFFER_NUM = 10;
 
 	enum {
 		RET_OK = 0,
@@ -34,7 +35,7 @@ public:
 	} CONFIG;
 
 public:
-	AdcBuffer();
+	AdcBuffer() {};
 	~AdcBuffer() {}
 	int32_t initialize(const CONFIG& config);
 	int32_t finalize(void);

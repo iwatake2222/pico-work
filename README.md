@@ -10,10 +10,12 @@ cd pico-sdk && git submodule update --init && cd ..
 mkdir build && cd build
 
 # For Windows Visual Studio 2019 (Developer Command Prompt for VS 2019)
+# cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DPICO_DEOPTIMIZED_DEBUG=on
 cmake .. -G "NMake Makefiles"
 nmake
 
 # For Windows MSYS2 (Run the following commands on MSYS2)
+# cmake .. -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Debug -DPICO_DEOPTIMIZED_DEBUG=on
 cmake .. -G "MSYS Makefiles" 
 make
 ```

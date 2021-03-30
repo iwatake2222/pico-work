@@ -4,6 +4,9 @@
 #include "pico/stdlib.h"
 #include "AdcBuffer.h"
 
+/*** CONST VALUE ***/
+
+/*** MACRO ***/
 #ifndef BUILD_ON_PC
 #define HALT() do{while(1) sleep_ms(100);}while(0)
 #define PRINT_TIME() do{printf("TIME: %d [ms]\n", to_ms_since_boot(get_absolute_time()));}while(0)
@@ -12,17 +15,14 @@
 #define PRINT_TIME() do{}while(0)
 #endif
 
+/*** FUNCTION ***/
 
+/*** GLOBAL VARIABLE ***/
 std::function<void(void)> AdcBuffer::irqHandlerStatic;
 
 void dma_handler()
 {
 	AdcBuffer::irqHandlerStatic();
-}
-
-AdcBuffer::AdcBuffer()
-{
-	irqHandlerStatic = [this] { irqHandler(); };
 }
 
 void AdcBuffer::irqHandler()
@@ -33,8 +33,8 @@ void AdcBuffer::irqHandler()
 	// printf("dma_handler\n");
 
 	/* Restart DMS */
-	if (m_adcBufferList.size() > 10) {
-		printf("overflow\n");
+	if (m_adcBufferList.size() > BUFFER_NUM) {
+		printf("overflow at AdcBuffer\n");
 	} else {
 		m_adcBufferList.resize(m_adcBufferList.size() + 1);
 		m_adcBufferList.back().resize(m_captureDepth);
@@ -49,6 +49,7 @@ void AdcBuffer::irqHandler()
 
 int32_t AdcBuffer::initialize(const CONFIG& config)
 {
+	irqHandlerStatic = [this] { irqHandler(); };
 	/* Set parameters */
 	m_captureChannel = config.captureChannel;
 	m_captureDepth = config.captureDepth;

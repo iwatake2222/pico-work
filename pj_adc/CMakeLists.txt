@@ -9,6 +9,7 @@ add_executable(${BinName}
 	font.h
 	AdcBuffer.h
 	AdcBuffer.cpp
+	fft.cpp
 )
 
 pico_enable_stdio_usb(${BinName} 1)
