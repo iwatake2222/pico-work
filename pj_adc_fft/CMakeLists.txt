@@ -1,4 +1,4 @@
-set(BinName "pj_adc")
+set(BinName "pj_adc_fft")
 add_executable(${BinName}
 	Main.cpp
 	LcdIli9341SPI.h
