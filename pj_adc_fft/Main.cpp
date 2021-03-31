@@ -51,6 +51,7 @@ AdcBuffer* g_adcBuffer;
 std::deque<std::vector<float>> g_fftResultList;
 static int32_t g_timeFFT = 0;	// [msec]
 static bool g_multiCore = true;
+static int32_t s_cntForSkipDisplayTime = 0;			// workaround to avoid freeze (it looks crash happens becuse core0 processing time is long)
 
 int main() {
 	/*** Initilization ***/
@@ -83,7 +84,9 @@ int main() {
 		}
 
 		uint32_t t1 = to_ms_since_boot(get_absolute_time());
-		displayTime(lcd, isSkipDisplay, t1 - t0, g_timeFFT);
+		if (s_cntForSkipDisplayTime++ % 30 == 0) {
+			displayTime(lcd, isSkipDisplay, t1 - t0, g_timeFFT);
+		}
 		switchMultiCore(tp);
 	}
 
@@ -248,6 +251,7 @@ static void switchMultiCore(TpTsc2046SPI& tp)
 				multicore_launch_core1(core1_main);
 			}
 			s_previousTpCheckTime = to_ms_since_boot(get_absolute_time());
+			s_cntForSkipDisplayTime = 0;
 		}
 	}		
 }
