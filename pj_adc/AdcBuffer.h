@@ -9,19 +9,32 @@
 #include "hardware/dma.h"
 #include "hardware/irq.h"
 
-/***
+/*** Buffer structure
+ *   basic
  *   |----------------------------------|
  *   | buffer[0]: data of CAPTURE_DEPTH |  <--- Read then delete (The oldest data but not read yet)
  *   | buffer[1]: data of CAPTURE_DEPTH |
  *   | buffer[2]: data of CAPTURE_DEPTH |
  *   | buffer[3]: data of CAPTURE_DEPTH |  <--- Write from ADC via DMA (The latest data)
  *   |----------------------------------|
+ * 
+ *   actual use
+ *   |----------------------------------|
+ *   | buffer[0]: data of CAPTURE_DEPTH |  <--- UI: 3. Delete
+ *   | buffer[1]: data of CAPTURE_DEPTH |
+ *   | buffer[2]: data of CAPTURE_DEPTH |  <--- UI: 2. Read as the previous data,  FFT: 1. Read as the latest data
+ *   | buffer[3]: data of CAPTURE_DEPTH |  <--- UI: 1. Read as the latest data
+ *   | buffer[4]: data of CAPTURE_DEPTH |
+ *   | buffer[5]: data of CAPTURE_DEPTH |  <--- Write from ADC via DMA (The latest data)
+ *   | buffer[6]: data of CAPTURE_DEPTH |
+ *   | buffer[7]: data of CAPTURE_DEPTH |
+ *   |----------------------------------|
  ***/
 
 class AdcBuffer {
 public:
 	static constexpr int32_t ADC_CLOCK  = (48 * 1000 * 1000);        // Fixed value (48MHz)
-	static constexpr int32_t BUFFER_NUM = 5;
+	static constexpr int32_t BUFFER_NUM = 8;
 
 	enum {
 		RET_OK = 0,

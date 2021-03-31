@@ -15,9 +15,15 @@
 /*** CONST VALUE ***/
 static constexpr std::array<uint8_t, 2> COLOR_BG = { 0x00, 0x00 };
 static constexpr std::array<uint8_t, 2> COLOR_LINE = { 0xF8, 0x00 };
+static constexpr std::array<uint8_t, 2> COLOR_LINE_FFT = { 0x00, 0x1F };
 static constexpr int32_t SCALE = 2;
-static constexpr int32_t SCALE_FFT = 20;
+static constexpr int32_t SCALE_FFT = 10;
 static constexpr int32_t BUFFER_SIZE = 256;	// 2^x
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+static constexpr int32_t MIN_ADC_BUFFER_SIZE = MAX(2, (AdcBuffer::BUFFER_NUM + 1) / 2);
+static constexpr int32_t FFT_BUFFER_NUM = 3;
 
 /*** MACRO ***/
 #ifndef BUILD_ON_PC
@@ -35,6 +41,7 @@ static void reset(LcdIli9341SPI& lcd);
 /*** GLOBAL VARIABLE ***/
 AdcBuffer adcBuffer;
 std::deque<std::vector<float>> g_fftResultList;
+static int32_t g_timeFFT = 0;	// [msec]
 
 int main() {
 	stdio_init_all();
@@ -77,57 +84,65 @@ int main() {
 	adcBuffer.start();
 	while(1) {
 		uint32_t t0 = to_ms_since_boot(get_absolute_time());
-		// printf("%d\n", adcBuffer.getBufferSize());
-		if (adcBuffer.getBufferSize() > 2) {  // buffer size needs to be 3 (when the size is 2, data may be not filled yet)
-			/* Display wave */
-			auto& adcBufferPrevious = adcBuffer.getBuffer(0);
-			auto& adcBufferLatest = adcBuffer.getBuffer(1);
+
+		/*** Display wave ***/
+		/* When getting ADC data from buffer, use the halfway point index of buffer to avoid crash.
+		 *  If I use head point(older) index and delete the buffer after using, it may cause crash because FFT(core1) may still using it.
+		 *  (Note: FFT(core1) is just peeping the buffer)
+		 *  Good solution will be copying the data to another buffer and send it to core1 or using semaphore, but I do this just to make it easy
+		 * Also, do not include "equal" in the condition because adc(dma) is writing data into that index of buffer
+		*/
+		if (adcBuffer.getBufferSize() > MIN_ADC_BUFFER_SIZE) {
+			auto& adcBufferPrevious = adcBuffer.getBuffer(MIN_ADC_BUFFER_SIZE - 2);
+			auto& adcBufferLatest = adcBuffer.getBuffer(MIN_ADC_BUFFER_SIZE - 1);
 			const float scale = 1 / 256.0 * SCALE * LcdIli9341SPI::HEIGHT;
 			const float offset = - 0.5 * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2 - 50;
+			/* Delete previous line */
 			for (int32_t i = 1; i < adcBufferPrevious.size(); i++) {
 				// lcd.drawRect(i, (adcBufferPrevious[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_BG);
 				lcd.drawLine(
 					i - 1, adcBufferPrevious[i - 1] * scale + offset,
-					i, adcBufferPrevious[i] * scale + offset,
+					i, adcBufferPrevious[i] * scale + offset + 1,
 					2, COLOR_BG);
 			}
+			/* Draw new line */
 			for (int32_t i = 1; i < adcBufferLatest.size(); i++) {
 				// lcd.drawRect(i, (adcBufferLatest[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_LINE);
 				lcd.drawLine(
 					i - 1, adcBufferLatest[i - 1] * scale + offset,
-					i, adcBufferLatest[i] * scale + offset,
+					i, adcBufferLatest[i] * scale + offset + 1,
 					2, COLOR_LINE);
 			}
-			if (adcBuffer.getBufferSize() > AdcBuffer::BUFFER_NUM  * 0.6) {	// do not pop data immedeately, because fft may be using it
-				adcBuffer.deleteFront();
-			}
+			adcBuffer.deleteFront();
 		} else {
 			sleep_ms(1);
 		}
 
+		/*** Display FFT ***/
 		if (g_fftResultList.size() > 2) {  // buffer size needs to be 3 (when the size is 2, data may be not filled yet)
-			/* Display FFT */
 			auto& fftPrevious = g_fftResultList[0];
 			auto& fftLatest = g_fftResultList[1];
+			/* Delete previous line */
 			for (int32_t i = 1; i < fftPrevious.size() / 2; i++) {
 				// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftPrevious[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_BG);
 				lcd.drawLine(
 					i - 1, LcdIli9341SPI::HEIGHT * (1 - fftPrevious[i - 1]),
-					i, LcdIli9341SPI::HEIGHT * (1 - fftPrevious[i]),
+					i, LcdIli9341SPI::HEIGHT * (1 - fftPrevious[i]) + 1,
 					2, COLOR_BG);
 			}
+			/* Draw new line */
 			for (int32_t i = 1; i < fftLatest.size() / 2; i++) {
 				// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftLatest[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_LINE);
 				lcd.drawLine(
 					i - 1, LcdIli9341SPI::HEIGHT * (1 - fftLatest[i - 1]),
-					i, LcdIli9341SPI::HEIGHT * (1 - fftLatest[i]),
-					2, COLOR_LINE);
+					i, LcdIli9341SPI::HEIGHT * (1 - fftLatest[i]) + 1,
+					2, COLOR_LINE_FFT);
 			}
 			(void)g_fftResultList.pop_front();
 		}
 
 		uint32_t t1 = to_ms_since_boot(get_absolute_time());
-		printf("T = %d [ms]\n", t1 - t0);
+		printf("Time[ms]: main = %d, FFT = %d [ms]\n", t1 - t0, g_timeFFT);
 	}
 
 	adcBuffer.stop();
@@ -181,17 +196,18 @@ void core1_main()
 		sleep_ms(100);
 	}
 #else
-	constexpr int32_t BUFFER_NUM = 3;
+	
 	while(1) {
-		if (adcBuffer.getBufferSize() > 2) {
-			auto& data = adcBuffer.getBuffer(1);
+		uint32_t t0 = to_ms_since_boot(get_absolute_time());
+		if (adcBuffer.getBufferSize() > MIN_ADC_BUFFER_SIZE - 1) {			// do not use the latest data because, the index may be decreased by main thread
+			auto& data = adcBuffer.getBuffer(MIN_ADC_BUFFER_SIZE - 2);
 			std::vector<float> x(data.size());
 			for (int32_t i = 0; i < x.size(); i++) {
 				x[i] = (data[i] / 256.0 - 0.5) * 2;	// -1 ~ +1
 				x[i] *= SCALE_FFT;
 				x[i] *= hammingWindow((double)(i) / x.size());
 			}
-			if (g_fftResultList.size() > BUFFER_NUM) {
+			if (g_fftResultList.size() > FFT_BUFFER_NUM) {
 				// printf("overflow at g_fftResultList\n");
 			} else {
 				g_fftResultList.resize(g_fftResultList.size() + 1);
@@ -207,6 +223,8 @@ void core1_main()
 		} else {
 			sleep_ms(1);
 		}
+		uint32_t t1 = to_ms_since_boot(get_absolute_time());
+		g_timeFFT = t1 - t0;
 	}
 #endif
 }
