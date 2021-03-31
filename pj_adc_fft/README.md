@@ -35,3 +35,7 @@ make
 
 ## Note
 - There seems to be a bug as system often freeze!
+
+## Acknowledgements
+- fft.cpp
+	- http://www.osakac.ac.jp/labs/doi/dsp/fft.c
