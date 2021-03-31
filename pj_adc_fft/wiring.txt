@@ -1,3 +1,4 @@
+LCd and TP
 14 VCC:  3V3
 13 GND:  GND
 12 CS:     7 (GP5 = SPI0 CSn)
@@ -12,4 +13,7 @@
 3  T_DIN: 15 (GP11 = SPI1 TX)
 2  T_DO:  16 (GP12 = SPI1 RX)
 1  T_IRQ: 19 (GP14)
+
+MIC_OUT   31 (GP26 = ADC0)
+
 
