@@ -76,27 +76,27 @@ int main() {
 	reset(lcd);
 	adcBuffer.start();
 	while(1) {
-		// PRINT_TIME();
+		uint32_t t0 = to_ms_since_boot(get_absolute_time());
 		// printf("%d\n", adcBuffer.getBufferSize());
 		if (adcBuffer.getBufferSize() > 2) {  // buffer size needs to be 3 (when the size is 2, data may be not filled yet)
 			/* Display wave */
 			auto& adcBufferPrevious = adcBuffer.getBuffer(0);
 			auto& adcBufferLatest = adcBuffer.getBuffer(1);
 			const float scale = 1 / 256.0 * SCALE * LcdIli9341SPI::HEIGHT;
-			const float offset = - 0.5 * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2;
+			const float offset = - 0.5 * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2 - 50;
 			for (int32_t i = 1; i < adcBufferPrevious.size(); i++) {
 				// lcd.drawRect(i, (adcBufferPrevious[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_BG);
 				lcd.drawLine(
 					i - 1, adcBufferPrevious[i - 1] * scale + offset,
 					i, adcBufferPrevious[i] * scale + offset,
-					1, COLOR_BG);
+					2, COLOR_BG);
 			}
 			for (int32_t i = 1; i < adcBufferLatest.size(); i++) {
 				// lcd.drawRect(i, (adcBufferLatest[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_LINE);
 				lcd.drawLine(
 					i - 1, adcBufferLatest[i - 1] * scale + offset,
 					i, adcBufferLatest[i] * scale + offset,
-					1, COLOR_LINE);
+					2, COLOR_LINE);
 			}
 			if (adcBuffer.getBufferSize() > AdcBuffer::BUFFER_NUM  * 0.6) {	// do not pop data immedeately, because fft may be using it
 				adcBuffer.deleteFront();
@@ -112,22 +112,22 @@ int main() {
 			for (int32_t i = 1; i < fftPrevious.size() / 2; i++) {
 				// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftPrevious[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_BG);
 				lcd.drawLine(
-					LcdIli9341SPI::WIDTH - (i - 1), fftPrevious[i - 1] * LcdIli9341SPI::HEIGHT,
-					LcdIli9341SPI::WIDTH - i, fftPrevious[i] * LcdIli9341SPI::HEIGHT,
-					1, COLOR_BG);
+					i - 1, LcdIli9341SPI::HEIGHT * (1 - fftPrevious[i - 1]),
+					i, LcdIli9341SPI::HEIGHT * (1 - fftPrevious[i]),
+					2, COLOR_BG);
 			}
 			for (int32_t i = 1; i < fftLatest.size() / 2; i++) {
 				// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftLatest[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_LINE);
 				lcd.drawLine(
-					LcdIli9341SPI::WIDTH - (i - 1), fftLatest[i - 1] * LcdIli9341SPI::HEIGHT,
-					LcdIli9341SPI::WIDTH - i, fftLatest[i] * LcdIli9341SPI::HEIGHT,
-					1, COLOR_LINE);
+					i - 1, LcdIli9341SPI::HEIGHT * (1 - fftLatest[i - 1]),
+					i, LcdIli9341SPI::HEIGHT * (1 - fftLatest[i]),
+					2, COLOR_LINE);
 			}
 			(void)g_fftResultList.pop_front();
 		}
 
-		// PRINT_TIME();
-		// printf("---\n");
+		uint32_t t1 = to_ms_since_boot(get_absolute_time());
+		printf("T = %d [ms]\n", t1 - t0);
 	}
 
 	adcBuffer.stop();
@@ -181,6 +181,7 @@ void core1_main()
 		sleep_ms(100);
 	}
 #else
+	constexpr int32_t BUFFER_NUM = 3;
 	while(1) {
 		if (adcBuffer.getBufferSize() > 2) {
 			auto& data = adcBuffer.getBuffer(1);
@@ -190,8 +191,8 @@ void core1_main()
 				x[i] *= SCALE_FFT;
 				x[i] *= hammingWindow((double)(i) / x.size());
 			}
-			if (g_fftResultList.size() > 10) {
-				printf("overflow at g_fftResultList\n");
+			if (g_fftResultList.size() > BUFFER_NUM) {
+				// printf("overflow at g_fftResultList\n");
 			} else {
 				g_fftResultList.resize(g_fftResultList.size() + 1);
 				g_fftResultList.back().resize(x.size());

@@ -21,7 +21,7 @@
 class AdcBuffer {
 public:
 	static constexpr int32_t ADC_CLOCK  = (48 * 1000 * 1000);        // Fixed value (48MHz)
-	static constexpr int32_t BUFFER_NUM = 10;
+	static constexpr int32_t BUFFER_NUM = 5;
 
 	enum {
 		RET_OK = 0,

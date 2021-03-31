@@ -34,7 +34,7 @@ void AdcBuffer::irqHandler()
 
 	/* Restart DMS */
 	if (m_adcBufferList.size() > BUFFER_NUM) {
-		printf("overflow at AdcBuffer\n");
+		// printf("overflow at AdcBuffer\n");
 	} else {
 		m_adcBufferList.resize(m_adcBufferList.size() + 1);
 		m_adcBufferList.back().resize(m_captureDepth);

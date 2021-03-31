@@ -35,7 +35,7 @@ int32_t LcdIli9341SPI::initialize(const CONFIG& config)
 
 void LcdIli9341SPI::initializeIo(void)
 {
-	spi_init(getSpi(m_spiPortNum), 20 * 1000 * 1000);
+	spi_init(getSpi(m_spiPortNum), 50 * 1000 * 1000);
 	gpio_set_function(m_pinSck , GPIO_FUNC_SPI);
 	gpio_set_function(m_pinMosi , GPIO_FUNC_SPI);
 	gpio_set_function(m_pinMiso, GPIO_FUNC_SPI);
@@ -143,10 +143,10 @@ void LcdIli9341SPI::drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int
 			drawRect(x, y, size, size, color);
 		}
 	} else {
-		for (int32_t y = std::min(y0, y1); y <= std::max(y0, y1); y++) {
+		// for (int32_t y = std::min(y0, y1); y <= std::max(y0, y1); y++) {
 			// putPixel(x0, y, color);
-			drawRect(x0, y, size, size, color);
-		}
+		// }
+		drawRect(x0, std::min(y0, y1), size, std::abs(y1 - y0), color);
 	}
 }
 
