@@ -10,9 +10,9 @@ class LcdIli9341SPI {
 public:
 	static constexpr int32_t WIDTH = 320;
 	static constexpr int32_t HEIGHT = 240;
-	static constexpr int32_t FONT_DISPLAY_SIZE = 3;
-	static constexpr uint32_t COLOR_TEXT_FG[2] = {0x00, 0x00};
-	static constexpr uint32_t COLOR_TEXT_BG[2] = {0xFF, 0xFF};
+	static constexpr int32_t FONT_DISPLAY_SIZE = 2;
+	static constexpr uint32_t COLOR_TEXT_FG[2] = {0x07, 0xE0};
+	static constexpr uint32_t COLOR_TEXT_BG[2] = {0x00, 0x00};
 	
 	enum {
 		RET_OK = 0,

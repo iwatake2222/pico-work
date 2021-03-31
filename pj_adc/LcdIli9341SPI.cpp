@@ -1,6 +1,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <array>
 #include <vector>
 #include "pico/stdlib.h"
@@ -146,6 +148,8 @@ void LcdIli9341SPI::drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int
 		// for (int32_t y = std::min(y0, y1); y <= std::max(y0, y1); y++) {
 			// putPixel(x0, y, color);
 		// }
+		y0 = std::min((const int32_t)HEIGHT, std::max((const int32_t)0, y0));
+		y1 = std::min((const int32_t)HEIGHT, std::max((const int32_t)0, y1));
 		drawRect(x0, std::min(y0, y1), size, std::abs(y1 - y0), color);
 	}
 }

@@ -33,7 +33,7 @@ void AdcBuffer::irqHandler()
 	// printf("dma_handler\n");
 
 	/* Restart DMS */
-	if (m_adcBufferList.size() > BUFFER_NUM) {
+	if (m_adcBufferList.size() >= BUFFER_NUM) {
 		// printf("overflow at AdcBuffer\n");
 	} else {
 		m_adcBufferList.resize(m_adcBufferList.size() + 1);
