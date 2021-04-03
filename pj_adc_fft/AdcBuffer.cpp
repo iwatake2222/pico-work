@@ -29,17 +29,24 @@ void AdcBuffer::irqHandler()
 {
 	/* Clear the interrupt request. */
 	dma_hw->ints0 = 1u << m_dmaChannel;
-	m_adcDone = true;
 	// PRINT_TIME();
 	// printf("dma_handler\n");
 
+	/* Restart DMS */
+	uint8_t* p = m_adcBufferList.writePtr();
+	if (p == nullptr) {
+		// printf("AdcBuffer: overflow\n");
+		p = m_adcBufferList.getLatestWritePtr();
+	}
+	dma_channel_configure(m_dmaChannel, &m_dmaConfig,
+		p,              // dst
+		&adc_hw->fifo,  // src
+		m_captureDepth, // transfer count
+		true            // start immediately
+	);
 
 }
 
-bool AdcBuffer::isOverflow()
-{
-	return (m_adcBufferList.size() > BUFFER_NUM);
-}
 
 int32_t AdcBuffer::initialize(const CONFIG& config)
 {
@@ -50,8 +57,8 @@ int32_t AdcBuffer::initialize(const CONFIG& config)
 	m_samplingRate = config.samplingRate;
 
 	/* Reset buffer */
-	m_adcBufferList.clear();
-	m_adcDone = false;
+	m_adcBufferList.initialize(BUFFER_NUM, m_captureDepth);
+
 
 	/* Initialize ADC */
 	adc_init();
@@ -101,25 +108,6 @@ int32_t AdcBuffer::start(void)
 	return RET_OK;
 }
 
-int32_t AdcBuffer::startNext(void)
-{
-	if (!m_adcDone) return RET_OK;
-	/* Restart DMS */
-	if (m_adcBufferList.size() >= BUFFER_NUM) {
-		// printf("overflow at AdcBuffer\n");
-	} else {
-		m_adcBufferList.resize(m_adcBufferList.size() + 1);
-		m_adcBufferList.back().resize(m_captureDepth);
-	}
-	dma_channel_configure(m_dmaChannel, &m_dmaConfig,
-		m_adcBufferList.back().data(), // dst
-		&adc_hw->fifo,                 // src
-		m_captureDepth,                // transfer count
-		true                           // start immediately
-	);
-	return RET_OK;
-}
-
 int32_t AdcBuffer::stop(void)
 {
 	dma_channel_wait_for_finish_blocking(m_dmaChannel);
@@ -130,15 +118,15 @@ int32_t AdcBuffer::stop(void)
 
 int32_t AdcBuffer::getBufferSize()
 {
-	return m_adcBufferList.size();
+	return m_adcBufferList.getStoredDataNum();
 }
 
-std::vector<uint8_t>& AdcBuffer::getBuffer(int32_t index)
+std::vector<uint8_t>& AdcBuffer::getBuffer(int32_t next)
 {
-	return m_adcBufferList[index];
+	return m_adcBufferList.refer(next);
 }
 
 void AdcBuffer::deleteFront()
 {
-	(void)m_adcBufferList.pop_front();
+	(void)m_adcBufferList.read();
 }

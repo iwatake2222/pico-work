@@ -2,15 +2,15 @@
 #include <cstdio>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <deque>
-// #include <cstdlib>
-// #include <cstring>
+#include <cstdlib>
+#include <cstring>
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "LcdIli9341SPI.h"
 #include "TpTsc2046SPI.h"
 #include "AdcBuffer.h"
+#include "RingBuffer.h"
 
 /*** CONST VALUE ***/
 static constexpr std::array<uint8_t, 2> COLOR_BG = { 0x00, 0x00 };
@@ -20,11 +20,10 @@ static constexpr int32_t SCALE = 2;
 static constexpr int32_t SCALE_FFT = 10;
 static constexpr int32_t BUFFER_SIZE = 256;	// 2^x
 static constexpr int32_t SAMPLING_RATE = 10000;
-#ifndef MAX
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
-static constexpr int32_t MIN_ADC_BUFFER_SIZE = MAX(2, (AdcBuffer::BUFFER_NUM + 1) / 2);
-static constexpr int32_t FFT_BUFFER_NUM = 3;
+static constexpr int32_t MIN_ADC_BUFFER_SIZE = MIN(3, AdcBuffer::BUFFER_NUM);
 
 /*** MACRO ***/
 #ifndef BUILD_ON_PC
@@ -36,7 +35,7 @@ static constexpr int32_t FFT_BUFFER_NUM = 3;
 #endif
 
 /*** FUNCTION ***/
-void core1_main();
+static void core1_main();
 static LcdIli9341SPI& createStaticLcd(void);
 static TpTsc2046SPI& createStaticTp(void);
 static AdcBuffer& createStaticAdcBuffer(void);
@@ -48,7 +47,7 @@ static void switchMultiCore(TpTsc2046SPI& tp);
 
 /*** GLOBAL VARIABLE ***/
 AdcBuffer* g_adcBuffer;
-std::deque<std::vector<float>> g_fftResultList;
+RingBuffer<float> g_fftResultList;
 static int32_t g_timeFFT = 0;	// [msec]
 static bool g_multiCore = true;
 
@@ -67,6 +66,7 @@ int main() {
 	reset(lcd);
 	
 	/* Prepare core1 for FFT */
+	g_fftResultList.initialize(3, BUFFER_SIZE / 2);
 	if (g_multiCore) {
 		multicore_launch_core1(core1_main);
 	}
@@ -75,7 +75,6 @@ int main() {
 	adcBuffer.start();
 	while(1) {
 		uint32_t t0 = to_ms_since_boot(get_absolute_time());
-		adcBuffer.startNext();
 		bool isSkipDisplay = displayWave(adcBuffer, lcd);
 		displayFft(lcd);
 
@@ -151,15 +150,17 @@ static void reset(LcdIli9341SPI& lcd)
 
 static bool displayWave(AdcBuffer& adcBuffer, LcdIli9341SPI& lcd)
 {
-	/* When getting ADC data from buffer, use the halfway point index of buffer to avoid crash.
-		*  If I use head point(older) index and delete the buffer after using, it may cause crash because FFT(core1) may still using it.
-		*  (Note: FFT(core1) is just peeping the buffer)
-		*  Good solution will be copying the data to another buffer and send it to core1 or using semaphore, but I do this just to make it easy
-		* Also, do not include "equal" in the condition because adc(dma) is writing data into that index of buffer
+	/*
+	               n Frame                     n + 1
+	buff[0]   RP, LINE(PREVIOUS)           
+	buff[1]       LINE(NEW)                RP  LINE(PREVIOUS)
+	buff[2]   ADC is writing to this buff      LINE(NEW)
+	buff[3]   WP                           ADC is writing to this buff(this buff is not valid yet)
+	buff[4]                                WP
 	*/
-	if (adcBuffer.getBufferSize() > MIN_ADC_BUFFER_SIZE) {
-		auto& adcBufferPrevious = adcBuffer.getBuffer(MIN_ADC_BUFFER_SIZE - 2);
-		auto& adcBufferLatest = adcBuffer.getBuffer(MIN_ADC_BUFFER_SIZE - 1);
+	if (adcBuffer.getBufferSize() >= MIN_ADC_BUFFER_SIZE) {
+		auto& adcBufferPrevious = adcBuffer.getBuffer(0);
+		auto& adcBufferLatest = adcBuffer.getBuffer(1);
 		const float scale = 1 / 256.0 * SCALE * LcdIli9341SPI::HEIGHT;
 		const float offset = - 0.5 * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2 - 50;
 		/* Delete previous line */
@@ -181,6 +182,7 @@ static bool displayWave(AdcBuffer& adcBuffer, LcdIli9341SPI& lcd)
 		adcBuffer.deleteFront();
 		return false;
 	} else {
+		// printf("displayWave: underflow\n");
 		sleep_ms(1);
 		return true;
 	}
@@ -188,11 +190,12 @@ static bool displayWave(AdcBuffer& adcBuffer, LcdIli9341SPI& lcd)
 
 static void displayFft(LcdIli9341SPI& lcd)
 {
-	if (g_fftResultList.size() > 2) {
-		auto& fftPrevious = g_fftResultList[0];
-		auto& fftLatest = g_fftResultList[1];		// do not use the latest buffer (FFT_BUFFER_NUM - 1)
+	if (g_fftResultList.getStoredDataNum() >= 3) {
+		auto& fftPrevious = g_fftResultList.refer(0);
+		auto& fftLatest = g_fftResultList.refer(1);
+		
 		/* Delete previous line */
-		for (int32_t i = 1; i < fftPrevious.size() / 2; i++) {
+		for (int32_t i = 1; i < fftPrevious.size(); i++) {
 			// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftPrevious[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_BG);
 			lcd.drawLine(
 				i - 1, LcdIli9341SPI::HEIGHT * (1 - fftPrevious[i - 1]),
@@ -200,14 +203,16 @@ static void displayFft(LcdIli9341SPI& lcd)
 				2, COLOR_BG);
 		}
 		/* Draw new line */
-		for (int32_t i = 1; i < fftLatest.size() / 2; i++) {
+		for (int32_t i = 1; i < fftLatest.size(); i++) {
 			// lcd.drawRect(LcdIli9341SPI::WIDTH - i, fftLatest[i] * LcdIli9341SPI::HEIGHT, 2, 2, COLOR_LINE);
 			lcd.drawLine(
 				i - 1, LcdIli9341SPI::HEIGHT * (1 - fftLatest[i - 1]),
 				i, LcdIli9341SPI::HEIGHT * (1 - fftLatest[i]) + 1,
 				2, COLOR_LINE_FFT);
 		}
-		(void)g_fftResultList.pop_front();
+		(void)g_fftResultList.read();
+	} else {
+		// printf("displayFft: underflow\n");
 	}
 }
 
@@ -245,6 +250,7 @@ static void switchMultiCore(TpTsc2046SPI& tp)
 			if (g_multiCore) {
 				g_multiCore = false;
 				multicore_reset_core1();
+				g_fftResultList.initialize(10, BUFFER_SIZE / 2);
 			} else {
 				g_multiCore = true;
 				multicore_launch_core1(core1_main);
@@ -255,13 +261,13 @@ static void switchMultiCore(TpTsc2046SPI& tp)
 }
 
 extern int fft(int n, float x[], float y[]);
-double hammingWindow(double x)
+static double hammingWindow(double x)
 {
 	double val = 0.54 - 0.46 * std::cos(2 * M_PI * x);
 	return val;
 }
 
-void core1_main()
+static void core1_main()
 {
 	if (g_multiCore) {
 		printf("Hello, core1!\n");
@@ -291,28 +297,28 @@ void core1_main()
 	}
 #else
 	
+	static std::vector<float> x(BUFFER_SIZE);
+	static std::vector<float> y(BUFFER_SIZE);
 	while(1) {
 		uint32_t t0 = to_ms_since_boot(get_absolute_time());
-		if (g_adcBuffer->getBufferSize() > MIN_ADC_BUFFER_SIZE - 1) {			// do not use the latest data because, the index may be decreased by main thread
-			auto& data = g_adcBuffer->getBuffer(MIN_ADC_BUFFER_SIZE - 2);
-			std::vector<float> x(data.size());
+		if (g_adcBuffer->getBufferSize() >= MIN_ADC_BUFFER_SIZE - 1) {		// do not use the latest data, because the index may be decreased by main thread
+			auto& data = g_adcBuffer->getBuffer(1);							// do not use RP because the RP may be increased by main thread and overwritten by ADC
 			for (int32_t i = 0; i < x.size(); i++) {
 				x[i] = (data[i] / 256.0 - 0.5) * 2;	// -1 ~ +1
 				x[i] *= SCALE_FFT;
 				x[i] *= hammingWindow((double)(i) / x.size());
 			}
-			if (g_fftResultList.size() >= FFT_BUFFER_NUM) {
-				// printf("overflow at g_fftResultList\n");
-			} else {
-				g_fftResultList.resize(g_fftResultList.size() + 1);
-				g_fftResultList.back().resize(x.size());
-			}
-			auto resultBuffer = g_fftResultList.back().data();
-			for (int32_t i = 0; i < x.size(); i++) resultBuffer[i] = 0;
+			for (int32_t i = 0; i < y.size(); i++) y[i] = 0;
 
-			(void)fft(x.size(), x.data(), resultBuffer);
-			for (int32_t i = 0; i < x.size() / 2; i++){
-				resultBuffer[i] = std::sqrt(x[i] * x[i] + resultBuffer[i] * resultBuffer[i]);
+			float* resultBuffer = g_fftResultList.writePtr();
+			if (!resultBuffer) {
+				// printf("core1_main: overflow\n");
+				resultBuffer = g_fftResultList.getLatestWritePtr();
+			}
+			
+			(void)fft(x.size(), x.data(), y.data());
+			for (int32_t i = 0; i < BUFFER_SIZE / 2; i++){
+				resultBuffer[i] = std::sqrt(x[i] * x[i] + y[i] * y[i]);
 			}
 		} else {
 			sleep_ms(1);

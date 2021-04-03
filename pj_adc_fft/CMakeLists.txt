@@ -9,6 +9,7 @@ add_executable(${BinName}
 	font.h
 	AdcBuffer.h
 	AdcBuffer.cpp
+	RingBuffer.h
 	fft.cpp
 )
 
