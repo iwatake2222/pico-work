@@ -16,14 +16,14 @@
 static constexpr std::array<uint8_t, 2> COLOR_BG = { 0x00, 0x00 };
 static constexpr std::array<uint8_t, 2> COLOR_LINE = { 0xF8, 0x00 };
 static constexpr std::array<uint8_t, 2> COLOR_LINE_FFT = { 0x00, 0x1F };
-static constexpr int32_t SCALE = 2;
-static constexpr int32_t SCALE_FFT = 10;
-static constexpr int32_t BUFFER_SIZE = 256;	// 2^x
+static constexpr int32_t SCALE = 1;
+static constexpr int32_t SCALE_FFT = 8;
+static constexpr int32_t BUFFER_SIZE = 512;	// 2^x
 static constexpr int32_t SAMPLING_RATE = 10000;
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
-static constexpr int32_t MIN_ADC_BUFFER_SIZE = MIN(3, AdcBuffer::BUFFER_NUM);
+static constexpr int32_t MIN_ADC_BUFFER_SIZE = MIN(4, AdcBuffer::BUFFER_NUM);
 
 /*** MACRO ***/
 #ifndef BUILD_ON_PC
@@ -164,7 +164,7 @@ static bool displayWave(AdcBuffer& adcBuffer, LcdIli9341SPI& lcd)
 		const float scale = 1 / 256.0 * SCALE * LcdIli9341SPI::HEIGHT;
 		const float offset = - 0.5 * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2 - 50;
 		/* Delete previous line */
-		for (int32_t i = 1; i < adcBufferPrevious.size(); i++) {
+		for (int32_t i = 1; i < std::min(LcdIli9341SPI::WIDTH, (int32_t)adcBufferPrevious.size()); i++) {
 			// lcd.drawRect(i, (adcBufferPrevious[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_BG);
 			lcd.drawLine(
 				i - 1, adcBufferPrevious[i - 1] * scale + offset,
@@ -172,7 +172,7 @@ static bool displayWave(AdcBuffer& adcBuffer, LcdIli9341SPI& lcd)
 				2, COLOR_BG);
 		}
 		/* Draw new line */
-		for (int32_t i = 1; i < adcBufferLatest.size(); i++) {
+		for (int32_t i = 1; i < std::min(LcdIli9341SPI::WIDTH, (int32_t)adcBufferPrevious.size()); i++) {
 			// lcd.drawRect(i, (adcBufferLatest[i] / 256.0 - 0.5) * SCALE * LcdIli9341SPI::HEIGHT + LcdIli9341SPI::HEIGHT / 2, 2, 2, COLOR_LINE);
 			lcd.drawLine(
 				i - 1, adcBufferLatest[i - 1] * scale + offset,
@@ -250,7 +250,7 @@ static void switchMultiCore(TpTsc2046SPI& tp)
 			if (g_multiCore) {
 				g_multiCore = false;
 				multicore_reset_core1();
-				g_fftResultList.initialize(10, BUFFER_SIZE / 2);
+				g_fftResultList.initialize(3, BUFFER_SIZE / 2);
 			} else {
 				g_multiCore = true;
 				multicore_launch_core1(core1_main);
@@ -301,7 +301,7 @@ static void core1_main()
 	static std::vector<float> y(BUFFER_SIZE);
 	while(1) {
 		uint32_t t0 = to_ms_since_boot(get_absolute_time());
-		if (g_adcBuffer->getBufferSize() >= MIN_ADC_BUFFER_SIZE) {
+		if (g_adcBuffer->getBufferSize() >= MIN_ADC_BUFFER_SIZE - 1) {		// do not use "MIN_ADC_BUFFER_SIZE" because the main thread may pop the buffer
 			auto& data = g_adcBuffer->getBuffer(1);							// do not use RP because the RP may be increased by main thread and overwritten by ADC
 			for (int32_t i = 0; i < x.size(); i++) {
 				x[i] = (data[i] / 256.0 - 0.5) * 2;	// -1 ~ +1
