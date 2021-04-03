@@ -7,7 +7,7 @@ Dual Core Spectrum Analyzer on Raspberry Pi Pico (ADC, DMA, IRQ, SPI, Core0 and 
 ```
 git clone https://github.com/iwatake2222/pico-work.git
 cd pico-work
-git checkout beaa477d81822daf91ae6a3d8972e6c316e2346e
+git checkout 3cfd92afd4752d6b95a05af54bb0a78252b4bf9c
 git submodule update --init
 cd pico-sdk && git submodule update --init && cd ..
 mkdir build && cd build
