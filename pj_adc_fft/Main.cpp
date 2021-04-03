@@ -301,7 +301,7 @@ static void core1_main()
 	static std::vector<float> y(BUFFER_SIZE);
 	while(1) {
 		uint32_t t0 = to_ms_since_boot(get_absolute_time());
-		if (g_adcBuffer->getBufferSize() >= MIN_ADC_BUFFER_SIZE - 1) {		// do not use the latest data, because the index may be decreased by main thread
+		if (g_adcBuffer->getBufferSize() >= MIN_ADC_BUFFER_SIZE) {
 			auto& data = g_adcBuffer->getBuffer(1);							// do not use RP because the RP may be increased by main thread and overwritten by ADC
 			for (int32_t i = 0; i < x.size(); i++) {
 				x[i] = (data[i] / 256.0 - 0.5) * 2;	// -1 ~ +1
