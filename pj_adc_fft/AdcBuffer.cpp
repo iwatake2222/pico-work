@@ -29,22 +29,11 @@ void AdcBuffer::irqHandler()
 {
 	/* Clear the interrupt request. */
 	dma_hw->ints0 = 1u << m_dmaChannel;
+	m_adcDone = true;
 	// PRINT_TIME();
 	// printf("dma_handler\n");
 
-	/* Restart DMS */
-	if (m_adcBufferList.size() >= BUFFER_NUM) {
-		// printf("overflow at AdcBuffer\n");
-	} else {
-		m_adcBufferList.resize(m_adcBufferList.size() + 1);
-		m_adcBufferList.back().resize(m_captureDepth);
-	}
-	dma_channel_configure(m_dmaChannel, &m_dmaConfig,
-		m_adcBufferList.back().data(), // dst
-		&adc_hw->fifo,                 // src
-		m_captureDepth,                // transfer count
-		true                           // start immediately
-	);
+
 }
 
 bool AdcBuffer::isOverflow()
@@ -62,6 +51,7 @@ int32_t AdcBuffer::initialize(const CONFIG& config)
 
 	/* Reset buffer */
 	m_adcBufferList.clear();
+	m_adcDone = false;
 
 	/* Initialize ADC */
 	adc_init();
@@ -108,6 +98,25 @@ int32_t AdcBuffer::finalize(void)
 int32_t AdcBuffer::start(void)
 {
 	adc_run(true);
+	return RET_OK;
+}
+
+int32_t AdcBuffer::startNext(void)
+{
+	if (!m_adcDone) return RET_OK;
+	/* Restart DMS */
+	if (m_adcBufferList.size() >= BUFFER_NUM) {
+		// printf("overflow at AdcBuffer\n");
+	} else {
+		m_adcBufferList.resize(m_adcBufferList.size() + 1);
+		m_adcBufferList.back().resize(m_captureDepth);
+	}
+	dma_channel_configure(m_dmaChannel, &m_dmaConfig,
+		m_adcBufferList.back().data(), // dst
+		&adc_hw->fifo,                 // src
+		m_captureDepth,                // transfer count
+		true                           // start immediately
+	);
 	return RET_OK;
 }
 

@@ -53,6 +53,7 @@ public:
 	int32_t initialize(const CONFIG& config);
 	int32_t finalize(void);
 	int32_t start(void);
+	int32_t startNext(void);
 	int32_t stop(void);
 	int32_t getBufferSize();
 	std::vector<uint8_t>& getBuffer(int32_t index);
@@ -71,6 +72,7 @@ private:
 	std::deque<std::vector<uint8_t>> m_adcBufferList;
 	int32_t m_dmaChannel;
 	dma_channel_config m_dmaConfig;
+	bool m_adcDone;
 };
 
 #endif
