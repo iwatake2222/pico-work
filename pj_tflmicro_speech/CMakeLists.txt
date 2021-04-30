@@ -35,6 +35,11 @@ else()
     target_link_libraries(${BinName} 
         pico_stdlib
         pico-tflmicro
+        hardware_spi
+        hardware_adc
+        hardware_dma
+        hardware_irq
+        pico_multicore
     )
 
     pico_add_extra_outputs(${BinName})

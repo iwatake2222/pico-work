@@ -21,14 +21,17 @@ limitations under the License.
 #include <cstring>
 
 #include "utility_macro.h"
-#include "test_buffer.h"
 
+#ifdef BUILD_ON_PC
+#include "test_buffer.h"
+#else
+#include "adc_buffer.h"
+#endif
 
 /*** MACRO ***/
 #ifdef BUILD_ON_PC
 #define USE_TEST_BUFFER
 #endif
-#define USE_TEST_BUFFER
 
 #define TAG "AudioProvider"
 #define PRINT(...)   UTILITY_MACRO_PRINT(TAG, __VA_ARGS__)
