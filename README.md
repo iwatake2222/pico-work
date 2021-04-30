@@ -25,12 +25,12 @@ make
 ## Acknowledgements
 - pico-sdk
 	- https://github.com/raspberrypi/pico-sdk
-	- Copyright 2020 (c) 2020 Raspberry Pi (Trading) Ltd.
+	- Copyright 2020 Raspberry Pi (Trading) Ltd.
 - picoprobe
 	- https://github.com/raspberrypi/picoprobe
-	- Copyright (c) 2021 Raspberry Pi (Trading) Ltd.
+	- Copyright 2021 Raspberry Pi (Trading) Ltd.
 - pico-examples
-	- Copyright 2020 (c) 2020 Raspberry Pi (Trading) Ltd.
+	- Copyright 2020 Raspberry Pi (Trading) Ltd.
 	- https://github.com/raspberrypi/pico-examples
 - pico-tflmicro
 	- Copyright 2019 The TensorFlow Authors. All Rights Reserved.
