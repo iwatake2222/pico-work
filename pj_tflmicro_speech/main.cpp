@@ -85,7 +85,7 @@ static tflite::MicroInterpreter* createStaticInterpreter(void)
     return interpreter;
 }
 
-int32_t main(void) {
+int main(void) {
 #ifndef BUILD_ON_PC
     stdio_init_all();
     sleep_ms(1000);		// wait until UART connected

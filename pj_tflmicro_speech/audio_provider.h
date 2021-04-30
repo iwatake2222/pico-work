@@ -17,6 +17,7 @@ limitations under the License.
 #define AUDIO_PROVIDER_H_
 
 #include <cstdint>
+#include <cstring>
 #include <memory>
 
 #include "audio_buffer.h"

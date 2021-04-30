@@ -18,6 +18,7 @@ limitations under the License.
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <cstring>
 
 #include "utility_macro.h"
 #include "test_buffer.h"
@@ -27,6 +28,7 @@ limitations under the License.
 #ifdef BUILD_ON_PC
 #define USE_TEST_BUFFER
 #endif
+#define USE_TEST_BUFFER
 
 #define TAG "AudioProvider"
 #define PRINT(...)   UTILITY_MACRO_PRINT(TAG, __VA_ARGS__)
@@ -146,7 +148,8 @@ int32_t AudioProvider::GetLatestAudioTimestamp() {
 
 void AudioProvider::DebugWriteData(int32_t updated_time_duration) {
 #ifdef USE_TEST_BUFFER
-    dynamic_cast<TestBuffer*>(audio_buffer_.get())->DebugWriteData(updated_time_duration);
+    // dynamic_cast<TestBuffer*>(audio_buffer_.get())->DebugWriteData(updated_time_duration);
+    ((TestBuffer*)(audio_buffer_.get()))->DebugWriteData(updated_time_duration);
 #endif
 }
 

@@ -16,6 +16,12 @@ limitations under the License.
 #ifndef UTILITY_MACRO_H_
 #define UTILITY_MACRO_H_
 
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#ifndef BUILD_ON_PC
+#include "pico/stdlib.h"
+#endif
 
 
 #ifdef BUILD_ON_PC
@@ -24,7 +30,7 @@ limitations under the License.
 #else
 #define HALT() do { while(1) sleep_ms(100); } while(0);
 //#define PRINT() do {  }while(0)
-#define COMMON_HELPER_UTILITY_MACRO_PRINT_PRINT_(...) printf(__VA_ARGS__)
+#define UTILITY_MACRO_PRINT_(...) printf(__VA_ARGS__)
 #endif
 
 #define UTILITY_MACRO_PRINT(UTILITY_MACRO_PRINT_TAG, ...) do { \

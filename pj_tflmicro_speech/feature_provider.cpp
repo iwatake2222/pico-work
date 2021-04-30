@@ -35,7 +35,7 @@ FeatureProvider::~FeatureProvider() {}
 TfLiteStatus FeatureProvider::PopulateFeatureData(
     AudioProvider* audio_provider,
     tflite::ErrorReporter* error_reporter, int32_t last_time_in_ms,
-    int32_t time_in_ms, int* how_many_new_slices) {
+    int32_t time_in_ms, int32_t* how_many_new_slices) {
   if (feature_size_ != kFeatureElementCount) {
     TF_LITE_REPORT_ERROR(error_reporter,
                          "Requested feature_data_ size %d doesn't match %d",
@@ -97,7 +97,7 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
       const int new_step = (current_step - kFeatureSliceCount + 1) + new_slice;
       const int32_t slice_start_ms = (new_step * kFeatureSliceStrideMs);
       int16_t* audio_samples = nullptr;
-      int audio_samples_size = 0;
+      int32_t audio_samples_size = 0;
       // TODO(petewarden): Fix bug that leads to non-zero slice_start_ms
       audio_provider->GetAudioSamples((slice_start_ms > 0 ? slice_start_ms : 0),
                       kFeatureSliceDurationMs, &audio_samples_size,
