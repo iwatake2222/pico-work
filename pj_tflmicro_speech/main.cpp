@@ -116,11 +116,13 @@ int main(void) {
         /* Generate feature */
         audio_provider.DebugWriteData(32);
         const int32_t current_time = audio_provider.GetLatestAudioTimestamp();
+        if (current_time < 0) continue;
+
         int32_t how_many_new_slices = 0;
         TfLiteStatus feature_status = feature_provider.PopulateFeatureData(&audio_provider, error_reporter, previous_time, current_time, &how_many_new_slices);
         if (feature_status != kTfLiteOk) {
             /* It may reach here when underflow happens */
-            PRINT_E("Feature generation failed");
+            PRINT_E("Feature generation failed\n");
             // HALT();
         }
         previous_time = current_time;

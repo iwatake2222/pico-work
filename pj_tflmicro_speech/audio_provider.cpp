@@ -100,7 +100,8 @@ int32_t AudioProvider::GetAudioSamples(
         memmove(&local_buffer_[0], &local_buffer_[start_index_local_buffer], valid_data_num_ * sizeof(int16_t));
 
         /*   2. copy the rest data from the ring buffer with format conversion (if there is data in the ring buffer and if there is enough space in the local buffer */
-        if (!ring_buffer.IsUnderflow() && valid_data_num_ <= kBlockSize) {
+        // while (!ring_buffer.IsUnderflow() && valid_data_num_ <= kBlockSize) {
+        while (ring_buffer.stored_data_num() > 1 && valid_data_num_ <= kBlockSize) {        // don't use IsUnderflow because "stored_data_num==1" also means underflow (the data on WP is currently written by DMA)
             const auto& block = ring_buffer.Read();
             for (const auto& data : block) {
                 if (valid_data_num_ >= kBlockSize * 2) {
@@ -115,7 +116,8 @@ int32_t AudioProvider::GetAudioSamples(
     } else {
         /* target data is not stored in the local buffer yet */
         valid_data_num_ = 0;
-        while (!ring_buffer.IsUnderflow() && valid_data_num_ <= kBlockSize) {
+        // while (!ring_buffer.IsUnderflow() && valid_data_num_ <= kBlockSize) {
+        while (ring_buffer.stored_data_num() > 1 && valid_data_num_ <= kBlockSize) {        // don't use IsUnderflow because "stored_data_num==1" also means underflow (the data on WP is currently written by DMA)
             int32_t time_rp_ms = ring_buffer.accumulated_read_data_num() * kDurationPerBlock;
             if (time_rp_ms <= start_time_ms && start_time_ms < time_rp_ms + kDurationPerBlock) {
                 const auto& block = ring_buffer.Read();
@@ -143,8 +145,8 @@ int32_t AudioProvider::GetAudioSamples(
 
 int32_t AudioProvider::GetLatestAudioTimestamp() {
     auto& ring_buffer = audio_buffer_->GetRingBlockBuffer();
-    int32_t time_wp_ms = ring_buffer.accumulated_stored_data_num();
-    time_wp_ms -= 1;	// use the beginning time of the block (to work with feature_privider logic to calculate slices_needed)
+    int32_t time_wp_ms = ring_buffer.accumulated_stored_data_num() - 1;     // need -1, because the data on WP is currently written by DMA
+    time_wp_ms -= 1;    // use the beginning time of the block (to work with feature_privider logic to calculate slices_needed)
     time_wp_ms *= kDurationPerBlock;
     return time_wp_ms;
 }
