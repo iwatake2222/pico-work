@@ -45,7 +45,7 @@ void AdcBuffer::IrqHandler() {
     /* Restart DMS */
     uint8_t* p = adc_block_buffer_.WritePtr();
     if (p == nullptr) {
-        PRINT_E("AdcBuffer: overflow\n");
+        // PRINT_E("AdcBuffer: overflow\n");
         p = adc_block_buffer_.GetLatestWritePtr();
     }
     dma_channel_configure(dma_channel_, &dma_config_,

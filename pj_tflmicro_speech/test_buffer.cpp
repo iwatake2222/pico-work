@@ -18,6 +18,7 @@ limitations under the License.
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <cmath>
 
 #include "utility_macro.h"
 #include "test_audio_data.h"
@@ -45,6 +46,7 @@ int32_t TestBuffer::Initialize(const Config& config) {
     const int32_t kTestDataNum = sizeof(s_testAudioData) / sizeof(int16_t);
     for (int32_t i = 0; i < kTestDataNum; i++) {
         //s_test_data.push_back(i);
+        //s_test_data.push_back( (1 + sin((3.14 * i) / 16000.0 * 400)) * 128  );
         s_test_data.push_back(s_testAudioData[i] / 256 + 128);
     }
 
