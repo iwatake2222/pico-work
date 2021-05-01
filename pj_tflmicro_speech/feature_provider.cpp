@@ -18,7 +18,13 @@ limitations under the License.
 #include "micro_features/micro_features_generator.h"
 #include "micro_features/micro_model_settings.h"
 
+#include "utility_macro.h"
 #include "audio_provider.h"
+
+// #define DEBUG_RECORD
+#ifdef DEBUG_RECORD
+static int16_t s_audio[16000];
+#endif
 
 FeatureProvider::FeatureProvider(int feature_size, int8_t* feature_data)
     : feature_size_(feature_size),
@@ -88,7 +94,14 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
         dest_slice_data[i] = src_slice_data[i];
       }
     }
+
+#ifdef DEBUG_RECORD
+    if (slices_to_drop > 0) {
+      memmove(&s_audio[0 * 20 * 16], &s_audio[slices_to_drop * 20 * 16], slices_to_keep * 20 * 16 * sizeof(int16_t));
+    }
+#endif
   }
+
   // Any slices that need to be filled in with feature data have their
   // appropriate audio data pulled, and features calculated for that slice.
   if (slices_needed > 0) {
@@ -108,6 +121,11 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
                              audio_samples_size, kMaxAudioSampleSize);
         return kTfLiteError;
       }
+
+#ifdef DEBUG_RECORD
+      memcpy(&s_audio[new_slice * 20 * 16], audio_samples, 30 * 16 * sizeof(int16_t));
+#endif
+
       int8_t* new_slice_data = feature_data_ + (new_slice * kFeatureSliceSize);
       size_t num_samples_read;
       TfLiteStatus generate_status = GenerateMicroFeatures(
@@ -118,5 +136,16 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
       }
     }
   }
+
+#ifdef DEBUG_RECORD
+  if (time_in_ms > 3000) {
+      for (int i = 0; i < 16000; i++) {
+          printf("%d, ", s_audio[i]);
+      }
+      printf("\n");
+      HALT();
+  }
+#endif
+
   return kTfLiteOk;
 }
