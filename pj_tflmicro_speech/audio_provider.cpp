@@ -119,8 +119,8 @@ int32_t AudioProvider::GetAudioSamples(
         // while (!ring_buffer.IsUnderflow() && valid_data_num_ <= kBlockSize) {
         while (ring_buffer.stored_data_num() > 1 && valid_data_num_ <= kBlockSize) {        // don't use IsUnderflow because "stored_data_num==1" also means underflow (the data on WP is currently written by DMA)
             int32_t time_rp_ms = ring_buffer.accumulated_read_data_num() * kDurationPerBlock;
+            const auto& block = ring_buffer.Read();
             if (time_rp_ms <= start_time_ms && start_time_ms < time_rp_ms + kDurationPerBlock) {
-                const auto& block = ring_buffer.Read();
                 for (const auto& data : block) {
                     if (valid_data_num_ >= kBlockSize * 2) {
                         PRINT("[AudioProvider::initialize] shouldn't reach here\n");
