@@ -1,4 +1,4 @@
-set(BinName "pj_tflmicro_speech")
+set(BinName "pj_voice_assistant_wake_word")
 
 if(WIN32)
     set(BUILD_ON_PC ON)

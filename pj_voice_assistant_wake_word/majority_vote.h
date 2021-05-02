@@ -23,7 +23,7 @@ template<class T>
 class MajorityVote
 {
 private:
-    static constexpr int32_t kCategoryNum = 4;
+    static constexpr int32_t kCategoryNum = 5;
     static constexpr int32_t kHistoryNum = 10;
 
 public:

@@ -147,24 +147,24 @@ int main(void) {
         std::array<int32_t, kCategoryCount> current_score_list;
         for (int32_t i = 0; i < kCategoryCount; i++) {
             current_score_list[i] = y_quantized[i];
-            float y = (y_quantized[i] - output->params.zero_point) * output->params.scale;
-            if (y > 0.8 && (i == 2 || i == 3)) {
-                PRINT("%s: %f\n", kCategoryLabels[i], y);
-            }
+            // float y = (y_quantized[i] - output->params.zero_point) * output->params.scale;
+            // if (y > 0.8 && (i != 0 && i != 1)) {
+            //     PRINT("%s: %f\n", kCategoryLabels[i], y);
+            // }
         }
         // PRINT("----\n");
 
         /* From some experiments, slices_to_drop is 3 ~ 5. It means that the interval is 60 ~ 100 msec */
         /* So, using average for some results may cause wrong result */
-        // int32_t first_index;
-        // int32_t score;
-        // majority_vote.vote(current_score_list, first_index, score);
-        // float score_dequantized = (score - output->params.zero_point) * output->params.scale;
-        // if (score_dequantized > 0.5 && (first_index == 2 || first_index == 3)) {
-        //     PRINT("%s: %f\n", kCategoryLabels[first_index], score_dequantized);
-        // } else {
-        //     PRINT("%s: %f\n", "unknown", 1 - score_dequantized);
-        // }
+        int32_t first_index;
+        int32_t score;
+        majority_vote.vote(current_score_list, first_index, score);
+        float score_dequantized = (score - output->params.zero_point) * output->params.scale;
+        if (score_dequantized > 0.7 && (first_index != 0 && first_index != 1)) {
+            PRINT("%s: %f\n", kCategoryLabels[first_index], score_dequantized);
+        } else {
+            // PRINT("%s: %f\n", "unknown", 1 - score_dequantized);
+        }
         // PRINT("--------\n");
     }
 
