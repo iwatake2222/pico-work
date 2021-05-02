@@ -40,6 +40,8 @@ limitations under the License.
 #include "utility_macro.h"
 #include "audio_provider.h"
 #include "majority_vote.h"
+#include "LcdIli9341SPI.h"
+#include "TpTsc2046SPI.h"
 
 /*** MACRO ***/
 #define TAG "main"
@@ -85,12 +87,57 @@ static tflite::MicroInterpreter* createStaticInterpreter(void)
     return interpreter;
 }
 
+static LcdIli9341SPI& createStaticLcd(void)
+{
+    static LcdIli9341SPI lcd;
+    LcdIli9341SPI::CONFIG lcdConfig;
+    lcdConfig.spiPortNum = 0;
+    lcdConfig.pinSck = 2;
+    lcdConfig.pinMosi = 3;
+    lcdConfig.pinMiso = 4;
+    lcdConfig.pinCs = 5;
+    lcdConfig.pinDc = 7;
+    lcdConfig.pinReset = 6;
+    lcd.initialize(lcdConfig);
+    lcd.test();
+    return lcd;
+}
+
+static TpTsc2046SPI& createStaticTp(void)
+{
+    static TpTsc2046SPI tp;
+    TpTsc2046SPI::CONFIG tpConfig;
+    tpConfig.spiPortNum = 1;
+    tpConfig.pinSck = 10;
+    tpConfig.pinMosi = 11;
+    tpConfig.pinMiso = 12;
+    tpConfig.pinCs = 13;
+    tpConfig.pinIrq = 14;
+    tpConfig.callback = nullptr;
+    tp.initialize(tpConfig);
+    return tp;
+}
+
+static void reset(LcdIli9341SPI& lcd)
+{
+    static constexpr std::array<uint8_t, 2> COLOR_BG = { 0x00, 0x00 };
+    lcd.drawRect(0, 0, LcdIli9341SPI::WIDTH, LcdIli9341SPI::HEIGHT, COLOR_BG);
+    lcd.setCharPos(0, 0);
+}
+
 int main(void) {
+    /*** Initilization ***/
+    /* Initialize system */
 #ifndef BUILD_ON_PC
     stdio_init_all();
     sleep_ms(1000);		// wait until UART connected
 #endif
     PRINT("Hello, world!\n");
+
+    /* Initialize device */
+    LcdIli9341SPI& lcd = createStaticLcd();
+    TpTsc2046SPI& tp = createStaticTp();
+    reset(lcd);
 
     /* Create interpreter */
     tflite::MicroInterpreter* interpreter = createStaticInterpreter();
@@ -112,11 +159,12 @@ int main(void) {
     //MajorityVote<float> majority_vote;
     MajorityVote<int32_t> majority_vote;
 
+    /*** Main loop ***/
     while (1) {
         /* Generate feature */
         audio_provider.DebugWriteData(32);
         const int32_t current_time = audio_provider.GetLatestAudioTimestamp();
-        if (current_time < 0) continue;
+        if (current_time < 0 || current_time == previous_time) continue;
 
         int32_t how_many_new_slices = 0;
         TfLiteStatus feature_status = feature_provider.PopulateFeatureData(&audio_provider, error_reporter, previous_time, current_time, &how_many_new_slices);
@@ -128,10 +176,8 @@ int main(void) {
         previous_time = current_time;
         if (how_many_new_slices == 0) continue;
 
-        /* Copy the generated feature data to input tensor buffer*/
+        /* Copy the generated feature data to input tensor buffer */
         for (int32_t i = 0; i < kFeatureElementCount; i++) {
-            //input->data.int8[i] = g_yes_micro_f2e59fea_nohash_1_data[i];
-            //input->data.int8[i] = g_no_micro_f9643d42_nohash_4_data[i];
             input->data.int8[i] = feature_buffer[i];
         }
 
@@ -142,7 +188,8 @@ int main(void) {
             HALT();
         }
 
-        /* Show result */
+        /*** Show result ***/
+        /* Current result */
         int8_t* y_quantized = output->data.int8;
         std::array<int32_t, kCategoryCount> current_score_list;
         for (int32_t i = 0; i < kCategoryCount; i++) {
@@ -154,19 +201,43 @@ int main(void) {
         }
         // PRINT("----\n");
 
-        /* From some experiments, slices_to_drop is 3 ~ 5. It means that the interval is 60 ~ 100 msec */
-        /* So, using average for some results may cause wrong result */
-        int32_t first_index;
+        /* Average result, and check if the average result updated */
+        static int32_t s_previous_first_index = -1;
+        int32_t first_index = -1;
         int32_t score;
         majority_vote.vote(current_score_list, first_index, score);
         float score_dequantized = (score - output->params.zero_point) * output->params.scale;
         if (score_dequantized > 0.7 && (first_index != 0 && first_index != 1)) {
             PRINT("%s: %f\n", kCategoryLabels[first_index], score_dequantized);
+            if (s_previous_first_index != first_index) {
+                s_previous_first_index = first_index;   // new label
+            } else {
+                first_index = -1;   // the same as the previous
+            }
         } else {
             // PRINT("%s: %f\n", "unknown", 1 - score_dequantized);
+            first_index = -1;   // not recognized
         }
         // PRINT("--------\n");
+
+        /* Display the recognized label */
+        if (first_index != -1) {
+            lcd.setCharPos(100, 100);
+            lcd.putText(kCategoryLabels[first_index]);
+        }
+
+        /* Display feature data */
+        static std::vector<uint8_t> buffer(kFeatureElementCount * 2, 0);
+        for (int i = 0; i < kFeatureElementCount; i++ ) {
+            buffer[2 * i] = feature_buffer[i];
+        }
+        lcd.drawBuffer(10, 10, kFeatureSliceSize, kFeatureSliceCount, buffer);
     }
+
+    /*** Finalization ***/
+    lcd.finalize();
+    tp.finalize();
+    audio_provider.Finalize();
 
     return 0;
 }
