@@ -40,8 +40,7 @@ limitations under the License.
 #include "utility_macro.h"
 #include "audio_provider.h"
 #include "majority_vote.h"
-#include "LcdIli9341SPI.h"
-#include "TpTsc2046SPI.h"
+#include "oled_seps525_spi.h"
 
 /*** MACRO ***/
 #define TAG "main"
@@ -87,42 +86,21 @@ static tflite::MicroInterpreter* createStaticInterpreter(void)
     return interpreter;
 }
 
-static LcdIli9341SPI& createStaticLcd(void)
+static OledSeps525Spi& createStaticOled(void)
 {
-    static LcdIli9341SPI lcd;
-    LcdIli9341SPI::CONFIG lcdConfig;
-    lcdConfig.spiPortNum = 0;
-    lcdConfig.pinSck = 2;
-    lcdConfig.pinMosi = 3;
-    lcdConfig.pinMiso = 4;
-    lcdConfig.pinCs = 5;
-    lcdConfig.pinDc = 7;
-    lcdConfig.pinReset = 6;
-    lcd.initialize(lcdConfig);
-    lcd.test();
-    return lcd;
-}
-
-static TpTsc2046SPI& createStaticTp(void)
-{
-    static TpTsc2046SPI tp;
-    TpTsc2046SPI::CONFIG tpConfig;
-    tpConfig.spiPortNum = 1;
-    tpConfig.pinSck = 10;
-    tpConfig.pinMosi = 11;
-    tpConfig.pinMiso = 12;
-    tpConfig.pinCs = 13;
-    tpConfig.pinIrq = 14;
-    tpConfig.callback = nullptr;
-    tp.initialize(tpConfig);
-    return tp;
-}
-
-static void reset(LcdIli9341SPI& lcd)
-{
+    static OledSeps525Spi oled;
+    OledSeps525Spi::Config config;
+    config.spi_port_num = 0;
+    config.pin_sck = 2;
+    config.pin_mosi = 3;
+    config.pin_cs = 5;
+    config.pin_dc = 7;
+    config.pin_reset = 6;
+    oled.Initialize(config);
+    oled.Test();
     static constexpr std::array<uint8_t, 2> COLOR_BG = { 0x00, 0x00 };
-    lcd.drawRect(0, 0, LcdIli9341SPI::WIDTH, LcdIli9341SPI::HEIGHT, COLOR_BG);
-    lcd.setCharPos(0, 0);
+    oled.DrawRect(0, 0, OledSeps525Spi::kWidth, OledSeps525Spi::kHeight, COLOR_BG);
+    return oled;
 }
 
 int main(void) {
@@ -135,9 +113,7 @@ int main(void) {
     PRINT("Hello, world!\n");
 
     /* Initialize device */
-    LcdIli9341SPI& lcd = createStaticLcd();
-    TpTsc2046SPI& tp = createStaticTp();
-    reset(lcd);
+    OledSeps525Spi& oled = createStaticOled();
 
     /* Create interpreter */
     tflite::MicroInterpreter* interpreter = createStaticInterpreter();
@@ -221,22 +197,21 @@ int main(void) {
         // PRINT("--------\n");
 
         /* Display the recognized label */
-        if (first_index != -1) {
-            lcd.setCharPos(100, 100);
-            lcd.putText(kCategoryLabels[first_index]);
-        }
+        // if (first_index != -1) {
+        //     lcd.setCharPos(100, 100);
+        //     lcd.putText(kCategoryLabels[first_index]);
+        // }
 
         /* Display feature data */
         static std::vector<uint8_t> buffer(kFeatureElementCount * 2, 0);
         for (int i = 0; i < kFeatureElementCount; i++ ) {
-            buffer[2 * i] = feature_buffer[i];
+            buffer[2 * i + 1] = feature_buffer[i];
         }
-        lcd.drawBuffer(10, 10, kFeatureSliceSize, kFeatureSliceCount, buffer);
+        oled.DrawBuffer(10, 10, kFeatureSliceSize, kFeatureSliceCount, buffer);
     }
 
     /*** Finalization ***/
-    lcd.finalize();
-    tp.finalize();
+    oled.Finalize();
     audio_provider.Finalize();
 
     return 0;
