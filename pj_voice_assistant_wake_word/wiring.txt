@@ -1,10 +1,14 @@
 pico       My Breakout Board    OLED
 ---------------------------------------
-3(GND)           1              GND
-36(3V3)          2              VDD
-10(GP7)          3              DC
-5(GP3=SPI0 MOSI) 4              SDI
-4(GP2=SPI0 SCK)  5              SCL
-9(GP6)           6              RESn
-7(GP5=SPI0 CSn)  7              CSn
+3 (GND)           1              GND
+36 (3V3)          2              VDD
+10 (GP7)          3              DC
+5 (GP3=SPI0 MOSI) 4              SDI
+4 (GP2=SPI0 SCK)  5              SCL
+9 (GP6)           6              RESn
+7 (GP5=SPI0 CSn)  7              CSn
+
+pico                Microphone
+---------------------------------------
+31 (GP26 = ADC0)    MIC_OUT
 
