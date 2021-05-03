@@ -34,7 +34,8 @@ public:
 	void SetArea(int32_t x, int32_t y, int32_t w, int32_t h);
 	void PutPixel(int32_t x, int32_t y, std::array<uint8_t, 2> color);
 	void DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, std::array<uint8_t, 2> color);
-	void DrawBuffer(int32_t x, int32_t y, int32_t w, int32_t h, std::vector<uint8_t> buffer);
+	void DrawBuffer(int32_t x, int32_t y, int32_t w, int32_t h, const std::vector<uint8_t>& buffer);
+	void DrawBuffer(int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t* buffer);
 
 private:
 	void InitializeIo(void);
@@ -44,7 +45,7 @@ private:
     void WriteInitializeCmd(uint8_t cmd, uint8_t data);
 	void WriteCmd(uint8_t cmd);
 	void WriteData(uint8_t data);
-	void WriteData(uint8_t data_buffer[], int32_t len);
+	void WriteData(const uint8_t data_buffer[], int32_t len);
 	void ReadData(uint8_t cmd, uint8_t data_buffer[], int32_t len);
 	
 

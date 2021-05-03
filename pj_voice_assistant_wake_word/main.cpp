@@ -41,6 +41,7 @@ limitations under the License.
 #include "audio_provider.h"
 #include "majority_vote.h"
 #include "oled_seps525_spi.h"
+#include "logo_data.h"
 
 /*** MACRO ***/
 #define TAG "main"
@@ -54,7 +55,7 @@ static tflite::ErrorReporter* error_reporter = &micro_error_reporter;
 /*** FUNCTION ***/
 static tflite::MicroInterpreter* createStaticInterpreter(void)
 {
-    constexpr int32_t kTensorArenaSize = 1088 + 24 + 5968;
+    constexpr int32_t kTensorArenaSize = 10 * 1024;
     static uint8_t tensor_arena[kTensorArenaSize];
     const tflite::Model* model = tflite::GetModel(g_model);
     if (model->version() != TFLITE_SCHEMA_VERSION) {
@@ -103,6 +104,14 @@ static OledSeps525Spi& createStaticOled(void)
     return oled;
 }
 
+void ResetAudioBuffer(AudioProvider& audio_provider, int32_t& previous_time)
+{
+    previous_time = 0;
+    audio_provider.Finalize();
+    audio_provider.Initialize();
+
+}
+
 int main(void) {
     /*** Initilization ***/
     /* Initialize system */
@@ -148,6 +157,8 @@ int main(void) {
             /* It may reach here when underflow happens */
             PRINT_E("Feature generation failed\n");
             // HALT();
+            ResetAudioBuffer(audio_provider, previous_time);
+            continue;
         }
         previous_time = current_time;
         if (how_many_new_slices == 0) continue;
@@ -183,7 +194,8 @@ int main(void) {
         int32_t score;
         majority_vote.vote(current_score_list, first_index, score);
         float score_dequantized = (score - output->params.zero_point) * output->params.scale;
-        if (score_dequantized > 0.7 && (first_index != 0 && first_index != 1)) {
+        float threshold = first_index == 4 ? 0.5 : 0.7;     // "alexa"'s score tends to low
+        if (score_dequantized > threshold && (first_index != 0 && first_index != 1)) {
             PRINT("%s: %f\n", kCategoryLabels[first_index], score_dequantized);
             if (s_previous_first_index != first_index) {
                 s_previous_first_index = first_index;   // new label
@@ -196,18 +208,18 @@ int main(void) {
         }
         // PRINT("--------\n");
 
-        /* Display the recognized label */
-        // if (first_index != -1) {
-        //     lcd.setCharPos(100, 100);
-        //     lcd.putText(kCategoryLabels[first_index]);
-        // }
+        /* Display logo image */
+        if (first_index != -1) {    // new label recognized
+            oled.DrawBuffer(OledSeps525Spi::kWidth - kLogoWidth, (OledSeps525Spi::kHeight - kLogoHeight) / 2, kLogoWidth, kLogoHeight, logo_data[first_index - 2]);
+            // ResetAudioBuffer(audio_provider, previous_time);
+        }
 
         /* Display feature data */
         static std::vector<uint8_t> buffer(kFeatureElementCount * 2, 0);
         for (int i = 0; i < kFeatureElementCount; i++ ) {
             buffer[2 * i + 1] = feature_buffer[i];
         }
-        oled.DrawBuffer(10, 10, kFeatureSliceSize, kFeatureSliceCount, buffer);
+        oled.DrawBuffer(0, (OledSeps525Spi::kHeight - kFeatureSliceCount) / 2, kFeatureSliceSize, kFeatureSliceCount, buffer);
     }
 
     /*** Finalization ***/

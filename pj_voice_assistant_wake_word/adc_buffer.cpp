@@ -107,6 +107,7 @@ int32_t AdcBuffer::Initialize(const Config& config) {
 }
 
 int32_t AdcBuffer::Finalize(void) {
+    adc_block_buffer_.Finalize();
     return kRetOk;
 }
 
@@ -116,6 +117,7 @@ int32_t AdcBuffer::Start(void) {
 }
 
 int32_t AdcBuffer::Stop(void) {
+    dma_channel_set_irq0_enabled(dma_channel_, false);
     dma_channel_wait_for_finish_blocking(dma_channel_);
     adc_run(false);
     adc_fifo_drain();

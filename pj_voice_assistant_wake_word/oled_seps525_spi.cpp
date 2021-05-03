@@ -33,7 +33,7 @@ int32_t OledSeps525Spi::Initialize(const Config& config)
 
 void OledSeps525Spi::InitializeIo(void)
 {
-    spi_init(GetSpi(spi_port_num_), 50 * 1000 * 1000);
+    spi_init(GetSpi(spi_port_num_), 20 * 1000 * 1000);
     gpio_set_function(pin_sck_ , GPIO_FUNC_SPI);
     gpio_set_function(pin_mosi_ , GPIO_FUNC_SPI);
     // gpio_set_function(pin_miso_, GPIO_FUNC_SPI);
@@ -133,11 +133,18 @@ void OledSeps525Spi::DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, std::a
     }
 }
 
-void OledSeps525Spi::DrawBuffer(int32_t x, int32_t y, int32_t w, int32_t h, std::vector<uint8_t> buffer)
+void OledSeps525Spi::DrawBuffer(int32_t x, int32_t y, int32_t w, int32_t h, const std::vector<uint8_t>& buffer)
 {
     SetArea(x, y, w, h);
     WriteCmd(0x22);
     WriteData(buffer.data(), buffer.size());
+}
+
+void OledSeps525Spi::DrawBuffer(int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t* buffer)
+{
+    SetArea(x, y, w, h);
+    WriteCmd(0x22);
+    WriteData(buffer, w * h * 2);
 }
 
 void OledSeps525Spi::EnableCs(void)
@@ -176,7 +183,7 @@ void OledSeps525Spi::WriteData(uint8_t data)
     DisableCs();
 }
 
-void OledSeps525Spi::WriteData(uint8_t dataBuffer[], int32_t len)
+void OledSeps525Spi::WriteData(const uint8_t dataBuffer[], int32_t len)
 {
     gpio_put(pin_dc_, 1);
     EnableCs();
