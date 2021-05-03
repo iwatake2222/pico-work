@@ -5,6 +5,7 @@
     - "Ok Google"
     - "Hey Siri"
     - "Alexa"
+- Display a recognized word ( logo ) and feature data ( 49 x 40 spectgram )
 
 ## Device
 - Raspberry Pi Pico
@@ -12,7 +13,7 @@
     - NHD-1.69-160128UGC3
     - Controller: SEPS525
     - https://www.digikey.jp/product-detail/ja/newhaven-display-intl/NHD-1-69-160128UGC3/NHD-1-69-160128UGC3-ND/4756379
-    - Note: it may better to use LCD because the OLED display causes lots of noise and reduces recognition accuracy
+    - Note: it may be better to use LCD because the OLED display causes lots of noise and reduces recognition accuracy
 - Microphone
     - HiLetgo 2個セット MAX4466調整可能なゲインブレークアウトボードエレクトレットマイクアンプモジュールラズベリーパイマイクロフォンarduinoマイクロフォン 
     - https://www.amazon.co.jp/gp/product/B07DRGF8C2/ref=ppx_yo_dt_b_asin_title_o05_s00?ie=UTF8&psc=1
@@ -24,7 +25,7 @@
 ## Build
 - Raspberry Pi Pico
     - Follow the steps in README (https://github.com/iwatake2222/pico-work )
-    - You may need to change the project to be built and run, or use this commit ( 7431cfcebcaddd27e6465c229ba9a8c5f52f68dd )
+    - You may need to modify settings to change the project to be built and run, or use this commit ( 7431cfcebcaddd27e6465c229ba9a8c5f52f68dd )
 - PC ( for debugging )
     - Create a project using CMake in this directory
     - A project for Visual Studio 2019 was tested
@@ -49,7 +50,7 @@
     - provides an interface to access storead audio data in ring block buffer
 - RingBlockBuffer:
     - consists of some blocks. The block size is 512 Byte and the size is equal to DMA's transfer size
-    - 512 Byte ( 32 msec @16kHz ) is also convenient to work with FeatureProvider which generates feature data for 30 msec of audio data at 20 msec intervals
+    - 512 Byte ( 32 msec @16kHz ) is also convenient to work with FeatureProvider which generates feature data from 30 msec of audio data at 20 msec intervals
 - AudioProvider:
     - extracts data from the ring block buffer to the local buffer for the requested time
     - converts data from uint8_t to int16_t
