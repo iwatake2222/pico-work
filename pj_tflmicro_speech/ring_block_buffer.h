@@ -41,7 +41,7 @@ public:
     RingBlockBuffer()
         : wp_(0)
         , rp_(0)
-        , stored_data_num_(0)
+        // , stored_data_num_(0)
         , accumulated_stored_data_num_(0)
         , accumulated_read_data_num_(0) {
     };
@@ -57,7 +57,7 @@ public:
 
         wp_ = 0;
         rp_ = 0;
-        stored_data_num_ = 0;
+        // stored_data_num_ = 0;
         accumulated_stored_data_num_ = 0;
         accumulated_read_data_num_ = 0;
     }
@@ -119,7 +119,7 @@ public:
     }
 
     bool IsOverflow() const {
-        if (wp_ == rp_ && stored_data_num_ > 0) {
+        if (wp_ == rp_ && stored_data_num() > 0) {
             return true;
         } else {
             return false;
@@ -127,11 +127,12 @@ public:
     }
 
     bool IsUnderflow() const {
-        return stored_data_num_ == 0;
+        return stored_data_num() == 0;
     }
 
     int32_t stored_data_num() const {
-        return stored_data_num_;
+        // return stored_data_num_;
+        return accumulated_stored_data_num_ - accumulated_read_data_num_;
     }
 
     int32_t accumulated_stored_data_num() const {
@@ -145,7 +146,7 @@ public:
 private:
     void IncrementWp() {
         accumulated_stored_data_num_++;
-        stored_data_num_++;
+        // stored_data_num_++;
         wp_++;
         if (wp_ >= buffer_.size()) wp_ = 0;
     }
@@ -153,7 +154,7 @@ private:
     void IncrementRp() {
         if (!IsUnderflow()) {
             accumulated_read_data_num_++;
-            stored_data_num_--;
+            // stored_data_num_--;
             rp_++;
             if (rp_ >= buffer_.size()) rp_ = 0;
 
@@ -164,7 +165,7 @@ private:
     std::vector<std::vector<T>> buffer_;
     int32_t wp_;
     int32_t rp_;
-    int32_t stored_data_num_;
+    // int32_t stored_data_num_;
     int32_t accumulated_stored_data_num_;
     int32_t accumulated_read_data_num_;
 };
