@@ -34,7 +34,6 @@
     - extracts data from the ring block buffer to the local buffer for the requested time
     - converts data from uint8_t to int16_t
     - allocates the data on sequential memory address
-        - the local buffer keeps the past data even after the data was read, because duration time to calculate feature is 30 msec but stride time is 20 msec. It means data for the last 10 msec is used at the next calculation
 - FeatureProvider:
     - almost the same as the original code
 
